@@ -65,7 +65,7 @@
                      do (make-entry output (event-payload current) stamp
                                     :sequence-number i))))))
 
-(defun synchronize (&key vicon haptic output)
+(defun synchronize (&key output haptic vicon)
   (interleave
    (with-default-bag (bag vicon :direction :input))
    (with-vicon-channel (vicon-input bag))
@@ -85,12 +85,17 @@
 ~a
 
 Usage:
-synchronizer vicon haptic output
+synchronizer output [-h haptic-input] [-v vicon-input]
 
-  vicon         Path to a vicon TIDE file
-  haptic        Path to a haptic TIDE file
-  output        Path to the resulting TIDE file
+  output        Path to the resulting output TIDE file
+  vicon-input   Path to a Vicon input file
+  haptic-input  Path to a Haptic input file
 
+An input file can be specified multiple times through repeated
+usage of the option. An input file can be a TIDE file, a ZIP
+containing further input files, or a CSV file (the default
+assumption on an unknown file type). In the case of a TIDE file,
+the option can only be specified once.
 
 Project URL:   ~a
 Maintained by: ~a
@@ -108,14 +113,39 @@ Compiled against
                               (asdf:component-version system))))
                     (asdf:system-depends-on system)))))
 
+(defun check-compatibility (files)
+  (loop for file in (cdr files)
+        when (string-equal (pathname-type file) "tide")
+        do (error "TIDE input files may only be specified alone.")))
+
+(defun ensure-tide (files ensure-func)
+  (let ((files (mapcar #'uiop:parse-native-namestring files)))
+    (cond ((string-equal (pathname-type (first files)) "tide")
+           (first files))
+          (T ;; I have no idea why this isn't exported.
+           (let ((out (uiop/stream::get-temporary-file :type "tide")))
+             (funcall ensure-func files out)
+             out)))))
+
 (defun main (&rest noop)
   (declare (ignore noop))
   (let ((args (uiop:command-line-arguments)))
     (case (length args)
-      ((0 1 2)
+      ((0 1)
        (print-help))
       (T
-       (let ((args (mapcar #'uiop:parse-native-namestring args)))
-         (synchronize :vicon (first args)
-                      :haptic (second args)
-                      :output (third args)))))))
+       (let ((output (first args))
+             (haptics NIL)
+             (vicons NIL))
+         (loop for (option arg) in (cdr args) by #'cddr
+               do (cond ((string-equal option "-h")
+                         (push arg haptics))
+                        ((string-equal option "-v")
+                         (push arg vicons))
+                        (T (print-help)
+                           (return-from main))))
+         (check-compatibility haptics)
+         (check-compatibility vicons)
+         (let ((haptic (ensure-tide haptics #'haptic-bag-translator:convert))
+               (vicon (ensure-tide vicons #'vicon-bag-translator:convert)))
+           (synchronize :output output :vicon vicon :haptic haptic)))))))
