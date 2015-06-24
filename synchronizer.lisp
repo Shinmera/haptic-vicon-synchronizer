@@ -31,18 +31,9 @@
   (loop for channel in channels
         maximize (length channel)))
 
-(defun event-timestamp (event)
-  )
-
-(defun event-index (event)
-  )
-
-(defun event-payload (event)
-  )
-
 (defun maybe-update (stamp current channel)
-  (if (local-time:timestamp<= stamp (event-timestamp current))
-      (rsbag:entry channel (1+ (event-index current)))
+  (if (local-time:timestamp<= stamp (getf (rsb:event-timestamps current) :create))
+      (rsbag:entry channel (1+ (rsb:event-id current)))
       current))
 
 (defun synchronize-channels (inputs outputs)
@@ -62,7 +53,7 @@
             then (mapcar (curry #'maybe-update stamp) currents inputs)
             do (loop for output in outputs
                      for current in currents
-                     do (make-entry output (event-payload current) stamp
+                     do (make-entry output (rsb:event-data current) stamp
                                     :sequence-number i))))))
 
 (defun synchronize (&key output haptic vicon)
