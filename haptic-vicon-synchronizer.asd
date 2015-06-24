@@ -4,7 +4,7 @@
   :license "LGPL2.1"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :maintainer "Nicolas Hafner <shinmera@tymoon.eu>"
-  :description "Synchronizing a Haptic and Vicon TIDE file."
+  :description "Synchronize Haptic and Vicon files."
   :homepage "https://github.com/Shinmera/haptic-vicon-synchronizer/"
   :serial T
   :components ((:file "package")
