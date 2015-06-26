@@ -32,9 +32,10 @@
         maximize (length channel)))
 
 (defun maybe-update (stamp current channel)
-  (if (local-time:timestamp<= stamp (getf (rsb:event-timestamps current) :create))
-      (rsbag:entry channel (1+ (rsb:event-id current)))
-      current))
+  (loop for event = current then (rsbag:entry channel (rsb:event-sequence-number event))
+        while (and (local-time:timestamp<= stamp (getf (rsb:event-timestamps event) :create))
+                   (/= (rsb:event-sequence-number event) (1- (length channel))))
+        finally (return event)))
 
 (defun synchronize-channels (inputs outputs)
   (multiple-value-bind (start end) (apply #'max-range inputs)
