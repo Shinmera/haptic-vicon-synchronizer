@@ -130,7 +130,7 @@ Compiled against
        (let ((output (first args))
              (haptics NIL)
              (vicons NIL))
-         (loop for (option arg) in (cdr args) by #'cddr
+         (loop for (option arg) on (cdr args) by #'cddr
                do (cond ((string-equal option "-h")
                          (push arg haptics))
                         ((string-equal option "-v")
