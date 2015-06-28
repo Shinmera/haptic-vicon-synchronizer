@@ -1,11 +1,12 @@
 (in-package #:haptic-vicon-synchronizer)
 
-(defmacro interleave (&rest bodies)
-  (labels ((ins (bodies)
-             (if (cdr bodies)
-                 (append (car bodies) (list (ins (cdr bodies))))
-                 (car bodies))))
-    (ins bodies)))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro interleave (&rest bodies)
+    (labels ((ins (bodies)
+               (if (cdr bodies)
+                   (append (car bodies) (list (ins (cdr bodies))))
+                   (car bodies))))
+      (ins bodies))))
 
 (defun duration (from to)
   (- (local-time:timestamp-to-universal to)
