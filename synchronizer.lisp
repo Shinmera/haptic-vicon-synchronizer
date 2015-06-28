@@ -33,8 +33,8 @@
 
 (defun maybe-update (stamp current channel)
   (loop for event = current then (rsbag:entry channel (rsb:event-sequence-number event))
-        while (and (local-time:timestamp<= stamp (getf (rsb:event-timestamps event) :create))
-                   (/= (rsb:event-sequence-number event) (1- (length channel))))
+        while (and (< (rsb:event-sequence-number event) (length channel))
+                   (local-time:timestamp< (getf (rsb:event-timestamps event) :create) stamp))
         finally (return event)))
 
 (defun synchronize-channels (inputs outputs)
@@ -50,8 +50,8 @@
       (loop for time from start to end by s/event
             for stamp = (make-precise-timestamp time)
             for i from 0
-            for currents = (mapcar #'(lambda (c) (rsbag:entry c 0)) inputs)
-            then (mapcar (curry #'maybe-update stamp) currents inputs)
+            for currents = (mapcar (lambda (c) (rsbag:entry c 0)) inputs)
+            then (mapcar (lambda (c i) (maybe-update stamp c i)) currents inputs)
             do (loop for output in outputs
                      for current in currents
                      do (make-entry output (rsb:event-data current) stamp
