@@ -8,7 +8,8 @@
   :homepage "https://github.com/Shinmera/haptic-vicon-synchronizer/"
   :serial T
   :components ((:file "package")
-               (:file "synchronizer"))
+               (:file "synchronizer")
+               (:file "documentation"))
   :depends-on (:rsbag-helper
                :cl-rsbag
                :cl-rsb-common
