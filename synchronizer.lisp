@@ -9,8 +9,9 @@
       (ins bodies))))
 
 (defun duration (from to)
-  (- (local-time:timestamp-to-universal to)
-     (local-time:timestamp-to-universal from)))
+  (abs
+   (- (local-time:timestamp-to-universal from)
+      (local-time:timestamp-to-universal to))))
 
 (defun curry (func arg)
   (lambda (&rest args)
@@ -33,10 +34,15 @@
         maximize (length channel)))
 
 (defun maybe-update (stamp current channel)
-  (loop for event = current then (rsbag:entry channel (rsb:event-sequence-number event))
-        while (and (< (rsb:event-sequence-number event) (length channel))
-                   (local-time:timestamp< (getf (rsb:event-timestamps event) :create) stamp))
-        finally (return event)))
+  (flet ((next (event)
+           (let ((maybe-current (rsbag:entry channel (rsb:event-sequence-number event))))
+             (if (eql event maybe-current)
+                 (rsbag:entry channel (1+ (rsb:event-sequence-number event)))
+                 event))))
+    (loop for event = current then (next event)
+          while (and (< (rsb:event-sequence-number event) (length channel))
+                     (local-time:timestamp< (getf (rsb:event-timestamps event) :create) stamp))
+          finally (return event))))
 
 (defun synchronize-channels (inputs outputs)
   (multiple-value-bind (start end) (apply #'max-range inputs)
